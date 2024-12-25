@@ -145,6 +145,72 @@ impl std::fmt::Debug for Bytes {
 unsafe impl Send for Bytes {}
 unsafe impl Sync for Bytes {}
 
+pub trait ByteReader {}
+
+pub trait ByteUtil {
+    fn put_u16(&mut self, val: u16);
+
+    fn put_u32(&mut self, val: u32);
+
+    fn put_u64(&mut self, val: u64);
+
+    fn get_u16(&mut self) -> Option<u16>;
+
+    fn get_u32(&mut self) -> Option<u32>;
+
+    fn get_u64(&mut self) -> Option<u64>;
+}
+
+impl ByteUtil for Vec<u8> {
+    fn put_u16(&mut self, val: u16) {
+        self.extend_from_slice(&val.to_be_bytes());
+    }
+
+    fn put_u32(&mut self, val: u32) {
+        self.extend_from_slice(&val.to_be_bytes());
+    }
+
+    fn put_u64(&mut self, val: u64) {
+        self.extend_from_slice(&val.to_be_bytes());
+    }
+
+    fn get_u16(&mut self) -> Option<u16> {
+        if self.len() < 2 {
+            return None;
+        }
+        let mut bytes = [0; 2];
+        for i in (0..2).rev() {
+            bytes[i] = self.pop().unwrap();
+        }
+
+        Some(u16::from_be_bytes(bytes))
+    }
+
+    fn get_u32(&mut self) -> Option<u32> {
+        if self.len() < 4 {
+            return None;
+        }
+        let mut bytes = [0; 4];
+        for i in (0..4).rev() {
+            bytes[i] = self.pop().unwrap();
+        }
+
+        Some(u32::from_be_bytes(bytes))
+    }
+
+    fn get_u64(&mut self) -> Option<u64> {
+        if self.len() < 8 {
+            return None;
+        }
+        let mut bytes = [0; 8];
+        for i in (0..8).rev() {
+            bytes[i] = self.pop().unwrap();
+        }
+
+        Some(u64::from_be_bytes(bytes))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,5 +275,33 @@ mod tests {
         assert_eq!(*b1.as_ref(), *b2.as_ref());
         drop(b2);
         assert_eq!(b1.as_ref(), [1, 2, 3]);
+    }
+
+    #[test]
+    fn test_byteutil() {
+        let mut v: Vec<u8> = vec![];
+        let val = 12345;
+        let val1 = 32145;
+        ByteUtil::put_u32(&mut v, val);
+        ByteUtil::put_u32(&mut v, val1);
+        let res1 = ByteUtil::get_u32(&mut v).unwrap();
+        let res = ByteUtil::get_u32(&mut v).unwrap();
+
+        assert_eq!(res1, val1);
+        assert_eq!(res, val);
+    }
+
+    #[test]
+    fn test_byteutil_u64() {
+        let mut v: Vec<u8> = vec![];
+        let val = 1234567899;
+        let val1 = 1;
+        ByteUtil::put_u64(&mut v, val);
+        ByteUtil::put_u64(&mut v, val1);
+        let res1 = ByteUtil::get_u64(&mut v).unwrap();
+        let res = ByteUtil::get_u64(&mut v).unwrap();
+
+        assert_eq!(res1, val1);
+        assert_eq!(res, val);
     }
 }

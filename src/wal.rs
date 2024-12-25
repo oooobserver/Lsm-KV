@@ -7,6 +7,8 @@ use std::{
 
 use anyhow::{Context, Result};
 
+use crate::byte::ByteUtil;
+
 pub struct Wal {
     file: Arc<Mutex<BufWriter<File>>>,
 }
